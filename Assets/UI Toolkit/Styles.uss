@@ -1,0 +1,4 @@
+* {
+    -unity-font-definition: url('project://database/Assets/UI%20Toolkit/SourceSansPro-Regular%20SDF.asset?fileID=11400000&guid=21fe2774d07ff41619b1697ac2a64a85&type=2#SourceSansPro-Regular SDF');
+    font-size: 32px;
+}
