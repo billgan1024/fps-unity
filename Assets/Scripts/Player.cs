@@ -134,7 +134,7 @@ public class Player : MonoBehaviour
             rb.AddForce(moveDir*wallAcc, ForceMode.Acceleration);
             if(releasedJumpThisFrame) {
                 // perform a walljump
-                
+
             }
             break;
         }
@@ -218,58 +218,19 @@ public class Player : MonoBehaviour
         switch(collision.gameObject.tag) {
             case "Ground":
             DrawContactNormals(collision.contacts);
-            switch(state) {
-                case PlayerState.Ground:
-                foreach (ContactPoint contact in collision.contacts) {
-                    float angle = Vector3.Angle(contact.normal, Vector3.up);
-                    if(angle < 90) {
-                        if(!grounds.Contains(collision.gameObject)) grounds.Add(collision.gameObject);
-                        if(grounds.Count > 0) {
-                            slopeNormal = contact.normal;
-                            TransitionGround(collision.transform);
-                        }
-                    } else if(angle == 90) {
-                        if(!walls.Contains(collision.gameObject)) walls.Add(collision.gameObject);
-                        wallNormal = contact.normal;
+            foreach (ContactPoint contact in collision.contacts) {
+                float angle = Vector3.Angle(contact.normal, Vector3.up);
+                if(angle < 90) {
+                    if(!grounds.Contains(collision.gameObject)) grounds.Add(collision.gameObject);
+                    if(grounds.Count > 0) {
+                        slopeNormal = contact.normal;
                     }
+                } else if(angle == 90) {
+                    if(!walls.Contains(collision.gameObject)) walls.Add(collision.gameObject);
+                    wallNormal = contact.normal;
                 }
-                break;
-
-                case PlayerState.Air:
-                foreach (ContactPoint contact in collision.contacts) {
-                    float angle = Vector3.Angle(contact.normal, Vector3.up);
-                    if(angle < 90) {
-                        if(!grounds.Contains(collision.gameObject)) grounds.Add(collision.gameObject);
-                        if(grounds.Count > 0) {
-                            slopeNormal = contact.normal;
-                            TransitionGround(collision.transform);
-                        }
-                    } else if(angle == 90) {
-                        if(!walls.Contains(collision.gameObject)) walls.Add(collision.gameObject);
-                        wallNormal = contact.normal;
-                    }
-                }
-                break;
-
-                case PlayerState.Wall:
-                foreach (ContactPoint contact in collision.contacts) {
-                    float angle = Vector3.Angle(contact.normal, Vector3.up);
-                    if(angle < 90) {
-                        if(!grounds.Contains(collision.gameObject)) grounds.Add(collision.gameObject);
-                        if(grounds.Count > 0) {
-                            slopeNormal = contact.normal;
-                            TransitionGround(collision.transform);
-                        }
-                    } else if(angle == 90) {
-                        if(!walls.Contains(collision.gameObject)) walls.Add(collision.gameObject);
-                        wallNormal = contact.normal;
-                    }
-                }
-                break;
-
             }
             break;
-
         }
     }
 
@@ -280,136 +241,38 @@ public class Player : MonoBehaviour
             // only for objects tagged as ground
             case "Ground": 
             DrawContactNormals(collision.contacts);
-            // edit: this requires conditional logic based on state
-            switch(state) {
-                case PlayerState.Ground:
-                {
-                    // only reset grounded if we have at least 1 normal which is within slopeLimit of Vector3.up (for this object)
-                    // keep in mind that OnCollisionStay is invoked for every wall the player is touching
-                    bool isGround = false, isWall = false;
-                    foreach (ContactPoint contact in collision.contacts) {
-                        float angle = Vector3.Angle(contact.normal, Vector3.up);
-                        if(angle < 90)  {
-                            isGround = true;
-                            slopeNormal = contact.normal; // just update randomly
-                        } else if(angle == 90) {
-                            isWall = true; 
-                            wallNormal = contact.normal; // just update randomly (doesn't matter most of the time)
-                        }
-                    }
-                    // check if this collision was at a good angle for a ground check, because the normal could have
-                    // turned into a normal that doesn't have a valid angle
-                    if(isGround) {
-                        if(!grounds.Contains(collision.gameObject)) {
-                            grounds.Add(collision.gameObject); 
-                        }
-                        TransitionGround(collision.transform);
-                    } else {
-                        grounds.Remove(collision.gameObject);
-                        if(grounds.Count == 0) {
-                            slopeNormal = Vector3.up;
-                            TransitionAir();
-                        }
-                    }
-                    // same with a wall check
-                    if(isWall) {
-                        if(!walls.Contains(collision.gameObject)) {
-                            walls.Add(collision.gameObject); 
-                        }
-                    } else {
-                        walls.Remove(collision.gameObject);
-                        if(walls.Count == 0) wallNormal = Vector3.zero;
+                bool isGround = false, isWall = false;
+                foreach (ContactPoint contact in collision.contacts) {
+                    float angle = Vector3.Angle(contact.normal, Vector3.up);
+                    if(angle < 90)  {
+                        isGround = true;
+                        slopeNormal = contact.normal; // just update randomly
+                    } else if(angle == 90) {
+                        isWall = true; 
+                        wallNormal = contact.normal; // just update randomly (doesn't matter most of the time)
                     }
                 }
-                break;
-                case PlayerState.Air:
-                {
-                    // only reset grounded if we have at least 1 normal which is within slopeLimit of Vector3.up (for this object)
-                    // keep in mind that OnCollisionStay is invoked for every wall the player is touching
-
-                    bool isGround = false, isWall = false;
-                    foreach (ContactPoint contact in collision.contacts) {
-                        float angle = Vector3.Angle(contact.normal, Vector3.up);
-                        if(angle < 90)  {
-                            isGround = true;
-                            slopeNormal = contact.normal; // just update randomly
-                        } else if(angle == 90) {
-                            isWall = true; 
-                            wallNormal = contact.normal; // just update randomly (doesn't matter most of the time)
-                        }
+                // check if this collision was at a good angle for a ground check, because the normal could have
+                // turned into a normal that doesn't have a valid angle
+                if(isGround) {
+                    if(!grounds.Contains(collision.gameObject)) {
+                        grounds.Add(collision.gameObject); 
                     }
-                    // check if this collision was at a good angle for a ground check, because the normal could have
-                    // turned into a normal that doesn't have a valid angle
-                    if(isGround) {
-                        if(!grounds.Contains(collision.gameObject)) {
-                            grounds.Add(collision.gameObject); 
-                        }
-                        TransitionGround(collision.transform);
-                    } else {
-                        grounds.Remove(collision.gameObject);
-                        if(grounds.Count == 0) {
-                            slopeNormal = Vector3.up;
-                            TransitionAir();
-                        }
-                    }
-
-                    // same with a wall check
-                    if(isWall) {
-                        if(!walls.Contains(collision.gameObject)) {
-                            walls.Add(collision.gameObject); 
-                        }
-                    } else {
-                        walls.Remove(collision.gameObject);
-                        if(walls.Count == 0) wallNormal = Vector3.zero;
+                } else {
+                    grounds.Remove(collision.gameObject);
+                    if(grounds.Count == 0) {
+                        slopeNormal = Vector3.up;
                     }
                 }
-                break;
-                // different behaviour for oncollisionstay while we are wall riding
-                case PlayerState.Wall:
-                {
-
-                    bool isGround = false, isWall = false;
-                    foreach (ContactPoint contact in collision.contacts) {
-                        float angle = Vector3.Angle(contact.normal, Vector3.up);
-                        if(angle < 90)  {
-                            isGround = true;
-                            slopeNormal = contact.normal; // just update randomly
-                        } else if(angle == 90) {
-                            isWall = true; 
-                            wallNormal = contact.normal; // just update randomly (doesn't matter most of the time)
-                        }
+                // same with a wall check
+                if(isWall) {
+                    if(!walls.Contains(collision.gameObject)) {
+                        walls.Add(collision.gameObject); 
                     }
-                    // check if this collision was at a good angle for a ground check, because the normal could have
-                    // turned into a normal that doesn't have a valid angle
-                    if(isGround) {
-                        if(!grounds.Contains(collision.gameObject)) {
-                            grounds.Add(collision.gameObject); 
-                        }
-                        TransitionGround(collision.transform);
-                    } else {
-                        // this collision is not a ground object, but since we are on a wall, don't transition
-                        grounds.Remove(collision.gameObject);
-                        if(grounds.Count == 0) {
-                            slopeNormal = Vector3.up;
-                        }
-                    }
-                    // same with a wall check
-                    if(isWall) {
-                        if(!walls.Contains(collision.gameObject)) {
-                            walls.Add(collision.gameObject); 
-                        }
-                    } else {
-                        walls.Remove(collision.gameObject);
-                        if(walls.Count == 0) {
-                            wallNormal = Vector3.zero;
-                            TransitionAir();
-                        }
-                    }
+                } else {
+                    walls.Remove(collision.gameObject);
+                    if(walls.Count == 0) wallNormal = Vector3.zero;
                 }
-                break;
-                
-            }
-
             break;
         }
     }
@@ -418,38 +281,12 @@ public class Player : MonoBehaviour
     void OnCollisionExit(Collision collision) {
         switch(collision.gameObject.tag) {
             case "Ground":
-            switch(state) {
-                case PlayerState.Ground:
                 grounds.Remove(collision.gameObject);
                 walls.Remove(collision.gameObject);
                 if(grounds.Count == 0) {
                     slopeNormal = Vector3.up;
-                    TransitionAir();
                 }
                 if(walls.Count == 0) wallNormal = Vector3.zero;
-                break;
-                case PlayerState.Air:
-                grounds.Remove(collision.gameObject);
-                walls.Remove(collision.gameObject);
-                if(grounds.Count == 0) {
-                    slopeNormal = Vector3.up;
-                    TransitionAir();
-                }
-                if(walls.Count == 0) wallNormal = Vector3.zero;
-                break;
-                case PlayerState.Wall:
-                grounds.Remove(collision.gameObject);
-                walls.Remove(collision.gameObject);
-                // note that if we're on a wall, there shouldn't be ground that we collided with
-                if(grounds.Count == 0) {
-                    slopeNormal = Vector3.up;
-                    TransitionAir();
-                }
-                if(walls.Count == 0) {
-                    wallNormal = Vector3.zero;
-                }
-                break;
-            }
             break;
         }
     }
