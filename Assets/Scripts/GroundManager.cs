@@ -7,8 +7,10 @@ public class GroundManager : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        int groundLayer = LayerMask.NameToLayer("Ground");
         foreach(Transform child in transform) {
             child.tag = "Ground";
+            child.gameObject.layer = groundLayer;
         }   
     }
 
