@@ -20,7 +20,8 @@ public class Bullet : MonoBehaviour
     {     
         // this handles fast collision 
         // the layermask is an actual bitmask so u just use a bit shift to represent the ground layer
-        if(Physics.OverlapSphere(transform.position, 0.5f, 1 << groundLayer).Length > 0) Destroy(gameObject);
+        // also get size according to transform automatically
+        if(Physics.OverlapSphere(transform.position, transform.lossyScale.x, 1 << groundLayer).Length > 0) Destroy(gameObject);
     }
 
     void FixedUpdate() {

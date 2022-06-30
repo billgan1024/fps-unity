@@ -10,6 +10,9 @@ public class CameraManager : MonoBehaviour
     public Vector3 offset;
     private Player player;
 
+    public float zRotationTarget, rotationSpeed;
+    private float zRotation;
+
     // Update is called once per frame
     void Update() {
         // note: we lerp in local coordinates in the same amount of time, so it is accurate across objects
@@ -19,9 +22,9 @@ public class CameraManager : MonoBehaviour
         // and we attach the player mesh to the camera at the original position
         transform.position += offset;
     }
-    // sync rotation
     void LateUpdate() {
-        transform.rotation = Quaternion.Euler(player.xRotation, player.yRotation, 0);
+        // sync rotation from player and also the camera's own zRotation, which is set by the player as well
+        transform.rotation = Quaternion.Euler(player.xRotation, player.yRotation, zRotation);
     }
 
     public void StartFollow(Player player) {
@@ -31,6 +34,7 @@ public class CameraManager : MonoBehaviour
     }
 
     void FixedUpdate() {
+        zRotation = Mathf.MoveTowards(zRotation, zRotationTarget, rotationSpeed*Time.fixedDeltaTime);
         previousPosition = currentPosition;
         currentPosition = player.transform.position;
     }

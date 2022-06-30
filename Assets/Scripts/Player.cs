@@ -23,28 +23,20 @@ public class Player : MonoBehaviour
     // basically ground acc is high and ground drag is high, kb acc is low and drag is low so that we can apply velocity changes
     // to knock the player in some direction
     public float groundAcc;
-    public float airAcc;
-    public float kbAcc;
-    public float wallAcc; 
-    public float jumpSpeed;
-    public float wallBoostSpeed;
-    public float normalVerticalDrag;
+    public float airAcc, kbAcc, wallAcc;
+    public float jumpSpeed, wallBoostSpeed;
     // edit: this bug of updating drag force variables has been fixed with a new project apparently
     // now we just have varying horizontal drag and a constant vertical drag
     // horizontal drag force applies to the player with respect to the current ground normal
-    public float groundHorizontalDrag, airHorizontalDrag;
-    // wall drag and vertical drag are all with a ground normal of Vector3.up
-    public float wallHorizontalDrag, kbHorizontalDrag;
-    public float airGravity;
-    public float wallGravity;
-    public float kbGravity;
-
+    public float groundHorizontalDrag, airHorizontalDrag, wallHorizontalDrag, kbHorizontalDrag;
+    public float airGravity, wallGravity, kbGravity;
+    public float verticalDrag;
     public float slopeLimit;
     [Header("Input")]
     public Vector2 inputDir;
     [Header("State")]
     public float horizontalDrag;
-    public float verticalDrag;
+    public float wallRotation;
     public float gravity;
     // groundNormal: value for general movement along a slope
     public Vector3 groundNormal;
@@ -62,26 +54,23 @@ public class Player : MonoBehaviour
     // c# tuples moment (pog)
     // make this show up in the unity editor (basically allow unity to convert it into a readable format)
     public List<Contact> groundNormals, wallNormals;
-    public float xRotation;
-    public float yRotation;
+    public float xRotation, yRotation;
     public bool doubleJump;
     [Header("Weapon")]
     public GameObject bulletPrefab;
     public float bulletSpeed;
     public bool isFiring;
-    public float firingTimer;
-    public float firingDelay;
-    private bool jumpedThisFrame; 
-    private bool releasedJumpThisFrame;
+    public float firingTimer, firingDelay;
+    private bool jumpedThisFrame, releasedJumpThisFrame;
     private Rigidbody rb;
     private CameraManager cam;
+    [Header("Misc")]
     public float maxHeight;
+    public float cameraWallRotation;
     public enum PlayerState {
         Ground,
         Air,
-        // wall: is the player wallriding?
         Wall,
-        // knockback: is the player being knocked back (while mid-air)?
         Knockback
     }
     
@@ -91,28 +80,20 @@ public class Player : MonoBehaviour
     void Start() {
         Cursor.lockState = CursorLockMode.Locked;
         rb = GetComponent<Rigidbody>();
-        // edit: don't do this! remember that initialization returns a reference, so these two lists would be pointing to the same list
-        // groundNormals = wallNormals = new List<Contact>();
 
-        // find a spawnpoint and teleport to a particular location, then start the follow
         GameObject spawnpoints = GameObject.Find("Spawn Points");
         transform.position = spawnpoints.transform.GetChild(Random.Range(0, spawnpoints.transform.childCount)).position;
 
         cam = GameObject.Find("Main Camera").GetComponent<CameraManager>();
         cam.StartFollow(this);
 
-        // initialize variables
-        groundNormal = Vector3.up;
-        verticalDrag = normalVerticalDrag;
         TransitionAir();
     }   
-
     void FixedUpdate() {
         maxHeight = Mathf.Max(maxHeight, transform.position.y);
         firingTimer = Mathf.Max(0, firingTimer - Time.fixedDeltaTime);
 
-        // get ground and wall normal 
-        // since we push and remove things from the list, the selection really doesn't matter here
+        // get ground and wall normal each step 
         groundNormal = groundNormals.Count > 0 ? groundNormals[0].normal : Vector3.up;
         wallNormal = wallNormals.Count > 0 ? wallNormals[0].normal : Vector3.zero;
          
@@ -127,67 +108,69 @@ public class Player : MonoBehaviour
 
         switch(state) {
             case PlayerState.Ground:
-            rb.AddForce(moveDir*groundAcc, ForceMode.Acceleration);
-            if(jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
-                //update drag+gravity immediately (or don't)
-                Debug.Log("jumped");
-                TransitionAir();
-                rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
-            }
+                cam.zRotationTarget = 0;
+                rb.AddForce(moveDir*groundAcc, ForceMode.Acceleration);
+                if(jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
+                    Debug.Log("jumped");
+                    rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    TransitionAir();
+                }
             break;
 
             case PlayerState.Air:
-            rb.AddForce(moveDir*airAcc, ForceMode.Acceleration);
+                cam.zRotationTarget = 0;
+                rb.AddForce(moveDir*airAcc, ForceMode.Acceleration);
+                if(wallNormal != Vector3.zero) {
+                    // todo: update z rotation here
 
-            if(wallNormal != Vector3.zero) {
-                if(jumpedThisFrame) {
-                    // start a wall ride
-                    Debug.Log("started wallride");
-                    TransitionWall();
-                    // add some velocity
-                    if(rb.velocity.y <= wallBoostSpeed) rb.AddForce(Vector3.up*(wallBoostSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    if(jumpedThisFrame) {
+                        Debug.Log("started wallride");
+                        TransitionWall();
+                    }
+                } else {
+                    if(doubleJump && jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
+                        doubleJump = false;
+                        Debug.Log("doublejumped");
+                        rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    }
                 }
-            } else {
-                if(doubleJump && jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
-                    // double jump normally
-                    doubleJump = false;
-                    Debug.Log("doublejumped");
-                    rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
-                }
-            }
             break;
 
             // basically implement lucio wallride
             // while you hold jump, you're essentially stuck to the wall (just project this vector to the wall)
             case PlayerState.Wall:
-            rb.AddForce(Vector3.ProjectOnPlane(moveDir, wallNormal)*wallAcc, ForceMode.Acceleration);
-            if(releasedJumpThisFrame) {
-                // perform a walljump
-                Debug.Log("jumping off wall");
-                TransitionKnockback(); 
-                rb.AddForce(wallNormal*20, ForceMode.VelocityChange);
-                if(rb.velocity.y <= jumpSpeed) rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
-            }
+                // todo: update z rotation here (it's dependent on the signed angle between the wall normal and the look direction projected onto 
+                // the x-z plane)
+                // use signed angle since we care about the orientation of the two vectors with respect to the x-z plane
+                cam.zRotationTarget = cameraWallRotation*Mathf.Sin(Mathf.Deg2Rad*Vector3.SignedAngle(wallNormal, cam.transform.forward, Vector3.up));
+                rb.AddForce(Vector3.ProjectOnPlane(moveDir, wallNormal)*wallAcc, ForceMode.Acceleration);
+                if(releasedJumpThisFrame) {
+                    // perform a walljump
+                    Debug.Log("jumping off wall because jump was released");
+                    rb.AddForce(wallNormal*20, ForceMode.VelocityChange);
+                    if(rb.velocity.y <= jumpSpeed) rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    TransitionKnockback(); 
+                }
             break;
             
             case PlayerState.Knockback:
-            rb.AddForce(moveDir*kbAcc, ForceMode.Acceleration);
-            if(wallNormal != Vector3.zero) {
-                if(jumpedThisFrame) {
-                    // start a wall ride
-                    Debug.Log("started wallride");
-                    TransitionWall();
-                    // add some velocity
-                    if(rb.velocity.y <= wallBoostSpeed) rb.AddForce(Vector3.up*(wallBoostSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                cam.zRotationTarget = 0;
+                rb.AddForce(moveDir*kbAcc, ForceMode.Acceleration);
+                if(wallNormal != Vector3.zero) {
+                    if(jumpedThisFrame) {
+                        // start a wall ride
+                        Debug.Log("started wallride");
+                        // add some velocity
+                        TransitionWall();
+                    }
+                } else {
+                    if(doubleJump && jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
+                        // double jump normally
+                        doubleJump = false;
+                        Debug.Log("doublejumped");
+                        rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    }
                 }
-            } else {
-                if(doubleJump && jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
-                    // double jump normally
-                    doubleJump = false;
-                    Debug.Log("doublejumped");
-                    rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
-                }
-            }
             break;
         }
 
@@ -228,6 +211,7 @@ public class Player : MonoBehaviour
         if(val == 1) jumpedThisFrame = true;
         else releasedJumpThisFrame = true;
     }
+
     // void OnPause(InputValue value) {
     //     // pressed esc
     //     Cursor.lockState = Cursor.lockState == CursorLockMode.Locked ? 
@@ -250,14 +234,20 @@ public class Player : MonoBehaviour
         state = PlayerState.Ground;
     }
     
+    // immediately update normals and velocity 
     void TransitionWall() {
         horizontalDrag = wallHorizontalDrag;
         gravity = wallGravity;
+
+
+        rb.velocity = Vector3.ProjectOnPlane(rb.velocity, wallNormal);
+        if(rb.velocity.y <= wallBoostSpeed) rb.AddForce(Vector3.up*(wallBoostSpeed-rb.velocity.y), ForceMode.VelocityChange);
 
         state = PlayerState.Wall;
     }
 
     void OnCollisionEnter(Collision collision) {
+        // Debug.Log("collision entered");
         switch(collision.gameObject.tag) {
             case "Ground":
             DrawContactNormals(collision.contacts);
@@ -286,6 +276,7 @@ public class Player : MonoBehaviour
 
     // stopped touching a particular gameobject (just remvoe it from the list)
     void OnCollisionExit(Collision collision) {
+        // Debug.Log("collision exited");
         switch(collision.gameObject.tag) {
             case "Ground":
             int numGrounds = groundNormals.Count, numWalls = wallNormals.Count;
@@ -298,6 +289,7 @@ public class Player : MonoBehaviour
         foreach (ContactPoint contact in contacts) 
             Debug.DrawRay(contact.point, contact.normal*5, Color.green);
     }
+    // can try updating the normals here to keep them up to date sooner
     void TransitionAir() {
         horizontalDrag = airHorizontalDrag;
         gravity = airGravity;
@@ -332,7 +324,7 @@ public class Player : MonoBehaviour
 
     void AddContact(ContactPoint contact) {
         float angle = Vector3.Angle(contact.normal, Vector3.up);
-        if(angle < 90) {
+        if(angle <= slopeLimit) {
             // Debug.Log("ground detected");
             groundNormals.Add(new Contact(contact.otherCollider.gameObject, contact.normal));
         } else if(angle == 90) {
@@ -368,17 +360,16 @@ public class Player : MonoBehaviour
         }
 
         if(prevWallLength == 0 && curWallLength > 0) {
-            // started touching a wall
         } else if(prevWallLength > 0 && curWallLength == 0) {
             // stopped touching a wall
             switch(state) {
                 case PlayerState.Wall:
                     // jump off the wall automatically if you leave the wall
-                    Debug.Log("jumping off wall");
-                    TransitionKnockback(); 
+                    // use the wallNormal before we reset it
+                    Debug.Log("jumping off wall because you left it");
                     rb.AddForce(wallNormal*20, ForceMode.VelocityChange);
                     if(rb.velocity.y <= jumpSpeed) rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
-                    // TransitionAir();
+                    TransitionKnockback(); 
                 break;
             }
         }
