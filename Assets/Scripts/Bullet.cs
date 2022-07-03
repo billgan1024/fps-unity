@@ -1,35 +1,21 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Linq;
 
+// the bullet script that the real bullet uses
 public class Bullet : MonoBehaviour
 {
-    public Vector3 speed;
-    private Rigidbody rb;
-    private bool collided;
-    // apparently querying layers is buggy so just use this
-    private int groundLayer;
+    public Vector3 velocity;
+    public GameObject displayBullet;
+    public float projectileSize;
+
+    private LayerMask collideableMask;
+
     // Start is called before the first frame update
     void Start()
     {
-        // rb = GetComponent<Rigidbody>();
-        groundLayer = LayerMask.NameToLayer("Ground");
-    }
-    // Update is called once per frame
-    void Update()
-    {     
-        // this handles fast collision 
-        // the layermask is an actual bitmask so u just use a bit shift to represent the ground layer
-        // also get size according to transform automatically
-        if(Physics.OverlapSphere(transform.position, transform.lossyScale.x, 1 << groundLayer).Length > 0) Destroy(gameObject);
-    }
-
-    void FixedUpdate() {
-        // get all hits of the bullet using a spherecast
-        // if there is at least one hit, find the closest one, move the bullet to that position, and then 
-        // destroy the bullet 
-        // RaycastHit[] hitInfo = Physics.SphereCastAll(transform.position, transform.)
-
+        collideableMask = LayerMask.GetMask(new string[]{"Ground", "Player"});
     }
 
     void OnTriggerEnter(Collider other) {
@@ -37,5 +23,18 @@ public class Bullet : MonoBehaviour
         //     Debug.Log("destroyed bullet");
         //     Destroy(gameObject);
         // }
+    }
+
+    void FixedUpdate() {
+        // collide with the nearest object if there is one
+        RaycastHit[] hitData = Physics.RaycastAll(transform.position, velocity, velocity.magnitude*Time.fixedDeltaTime, collideableMask);
+        if(hitData.Length > 0) {
+            transform.position = hitData.OrderBy(hit => hit.distance).First().point;
+            Destroy(gameObject);
+
+            // if we're too close to a wall, the display bullet isn't created
+            if(displayBullet != null) Destroy(displayBullet);
+        }
+        transform.position += velocity*Time.fixedDeltaTime;
     }
 }

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using Unity.Netcode;
+using System.Linq;
 
 // state and input manager for the player
 // has variables and a current state; this script passes a copy of itself 
@@ -57,7 +58,7 @@ public class Player : MonoBehaviour
     public float xRotation, yRotation;
     public bool doubleJump;
     [Header("Weapon")]
-    public GameObject bulletPrefab;
+    public GameObject realBulletPrefab, displayBulletPrefab;
     public float bulletSpeed;
     public bool isFiring;
     public float firingTimer, firingDelay;
@@ -67,6 +68,15 @@ public class Player : MonoBehaviour
     [Header("Misc")]
     public float maxHeight;
     public float cameraWallRotation;
+    private AudioSource audioSource;
+    private Transform bulletOrigin;
+    private LayerMask aimableMask;
+    public float displayBulletSpawnThreshold;
+    [Header("Audio")]
+    public AudioClip rifleFireSound;
+    public AudioClip jumpSound;
+    [Header("Debug")]
+    public bool tapToFire = false;
     public enum PlayerState {
         Ground,
         Air,
@@ -80,6 +90,8 @@ public class Player : MonoBehaviour
     void Start() {
         Cursor.lockState = CursorLockMode.Locked;
         rb = GetComponent<Rigidbody>();
+        audioSource = GetComponent<AudioSource>();
+        aimableMask = LayerMask.GetMask(new string[]{"Ground", "Player"});
 
         GameObject spawnpoints = GameObject.Find("Spawn Points");
         transform.position = spawnpoints.transform.GetChild(Random.Range(0, spawnpoints.transform.childCount)).position;
@@ -87,9 +99,18 @@ public class Player : MonoBehaviour
         cam = GameObject.Find("Main Camera").GetComponent<CameraManager>();
         cam.StartFollow(this);
 
+        // grab a reference to the bullet origin object so we can spawn bullets there
+        bulletOrigin = cam.transform.Find("Bullet Origin");
+
         TransitionAir();
     }   
+
+    void Update() {
+    }
     void FixedUpdate() {
+        // fix random stuff happening when we touch a wall 
+        // edit: we just freeze the rotation to avoid accumulating angular velocity, then move the player 
+        // rb.angularVelocity = Vector3.zero;
         maxHeight = Mathf.Max(maxHeight, transform.position.y);
         firingTimer = Mathf.Max(0, firingTimer - Time.fixedDeltaTime);
 
@@ -98,12 +119,52 @@ public class Player : MonoBehaviour
         wallNormal = wallNormals.Count > 0 ? wallNormals[0].normal : Vector3.zero;
          
         if(isFiring && firingTimer <= 0) {
-            GameObject bullet = Instantiate(bulletPrefab, cam.transform.position, Quaternion.identity);
-            bullet.GetComponent<Rigidbody>().velocity = cam.transform.forward*bulletSpeed;
+            // bullets originate from cam.transform.position
+            audioSource.PlayOneShot(rifleFireSound, 0.4f);
+
+            GameObject realBullet = Instantiate(realBulletPrefab, cam.transform.position, Quaternion.identity);
+
+            // aimable mask: only ground and players at the moment
+            RaycastHit[] hitData = Physics.RaycastAll(cam.transform.position, cam.transform.forward, Mathf.Infinity, aimableMask);
+            
+            // vector3 that represents where the player is looking (basically we implement a raycast that stops at ground and players)
+
+            realBullet.GetComponent<Bullet>().velocity = cam.transform.forward*bulletSpeed;
+
+            // find the closest object (point) the player is looking at and aim the display bullet there, otherwise use the forward vector
+            // find the speed to make the display bullet and the normal bullet reach the look point at the same time
+            if(hitData.Length > 0) {
+
+                RaycastHit firstHit = hitData.OrderBy(hit => hit.distance).First();
+                Vector3 lookPoint = firstHit.point;
+
+                Vector3 displayBulletDir = (lookPoint-bulletOrigin.position).normalized;
+                
+                // only fire if the look point is in front of us
+                if(firstHit.distance > displayBulletSpawnThreshold) {
+                    GameObject displayBullet = Instantiate(displayBulletPrefab, bulletOrigin.position, Quaternion.identity);
+
+                    displayBullet.GetComponent<Rigidbody>().velocity = (lookPoint-bulletOrigin.position).normalized*bulletSpeed*
+                        ((lookPoint-bulletOrigin.position).magnitude)/firstHit.distance;
+                    realBullet.GetComponent<Bullet>().displayBullet = displayBullet;
+                }
+                    
+            } else {
+                GameObject displayBullet = Instantiate(displayBulletPrefab, bulletOrigin.position, Quaternion.identity);
+                displayBullet.GetComponent<Rigidbody>().velocity = cam.transform.forward*bulletSpeed;
+
+                realBullet.GetComponent<Bullet>().displayBullet = displayBullet;
+            }
+
+
+            Debug.Log(realBullet.transform.position == cam.transform.position);
+
             firingTimer = firingDelay;
         }
         
-        Vector3 moveDir = Vector3.ProjectOnPlane(transform.right*inputDir.x + transform.forward*inputDir.y, groundNormal).normalized;
+        // apply the rotation to the movement directions
+        Quaternion moveRotation = Quaternion.Euler(0, yRotation, 0);
+        Vector3 moveDir = Vector3.ProjectOnPlane(moveRotation*transform.right*inputDir.x + moveRotation*transform.forward*inputDir.y, groundNormal).normalized;
         Debug.DrawRay(transform.position, moveDir*10);
 
         switch(state) {
@@ -113,6 +174,7 @@ public class Player : MonoBehaviour
                 if(jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
                     Debug.Log("jumped");
                     rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
+                    // audioSource.PlayOneShot(jumpSound);
                     TransitionAir();
                 }
             break;
@@ -131,6 +193,7 @@ public class Player : MonoBehaviour
                     if(doubleJump && jumpedThisFrame && rb.velocity.y <= jumpSpeed) {
                         doubleJump = false;
                         Debug.Log("doublejumped");
+                        audioSource.PlayOneShot(jumpSound);
                         rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
                     }
                 }
@@ -168,6 +231,7 @@ public class Player : MonoBehaviour
                         // double jump normally
                         doubleJump = false;
                         Debug.Log("doublejumped");
+                        audioSource.PlayOneShot(jumpSound);
                         rb.AddForce(Vector3.up*(jumpSpeed-rb.velocity.y), ForceMode.VelocityChange);
                     }
                 }
@@ -202,7 +266,7 @@ public class Player : MonoBehaviour
             Vector2 delta = value.Get<Vector2>();
             yRotation += delta.x*GameManager.mouseSens;
             xRotation = Mathf.Clamp(xRotation - delta.y*GameManager.mouseSens, -90, 90);
-            transform.rotation = Quaternion.Euler(0, yRotation, 0);
+            // transform.rotation = Quaternion.Euler(0, yRotation, 0);
         }
     }
 
@@ -240,7 +304,7 @@ public class Player : MonoBehaviour
         gravity = wallGravity;
 
 
-        rb.velocity = Vector3.ProjectOnPlane(rb.velocity, wallNormal);
+        // rb.velocity = Vector3.ProjectOnPlane(rb.velocity, wallNormal);
         if(rb.velocity.y <= wallBoostSpeed) rb.AddForce(Vector3.up*(wallBoostSpeed-rb.velocity.y), ForceMode.VelocityChange);
 
         state = PlayerState.Wall;
