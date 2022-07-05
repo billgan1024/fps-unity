@@ -22,10 +22,11 @@ public class GameManager : MonoBehaviour
     }
     public static MenuState menuState;
     private UIDocument doc;
-    const int NUM_LEVELS = 4;
+    const int NUM_LEVELS = 1;
     public VisualTreeAsset[] menuLayouts;
 
     
+    public TemplateContainer easy;
 
     private bool pressedPauseThisFrame = false;
     // Start is called before the first frame update
@@ -63,16 +64,22 @@ public class GameManager : MonoBehaviour
 
         switch(menu) {
             case MenuState.Menu:
-            Button singleplayer = doc.rootVisualElement.Q<Button>("singleplayer-button");
-            singleplayer.clicked += () => LoadMenu(MenuState.Singleplayer);
-            // doc.rootVisualElement.Q<Button>("quit-button").clicked += () => {
-            //     Debug.Log("hi");
-            //     Application.Quit();
-            // };
+            Button singleplayer = doc.rootVisualElement.Q<Button>("menu-singleplayer-button");
+            Button multiplayer = doc.rootVisualElement.Q<Button>("menu-multiplayer-button");
+            doc.rootVisualElement.Q<Button>("menu-singleplayer-button").clicked += () => {
+                // singleplayer.Blur();
+                LoadMenu(MenuState.Singleplayer);
+                };
+            doc.rootVisualElement.Q<Button>("menu-multiplayer-button").clicked += () => {
+                // multiplayer.Blur();
+                LoadMenu(MenuState.Multiplayer);
+            };
+            
+            doc.rootVisualElement.Q<Button>("menu-quit-button").clicked += () => Application.Quit();
             break;
             case MenuState.Singleplayer:
             for(int i = 1; i <= NUM_LEVELS; i++) {
-                Button btn = doc.rootVisualElement.Q<Button>("level" + i + "-button");
+                Button btn = doc.rootVisualElement.Q<Button>("singleplayer-level" + i + "-button");
                 btn.clicked += () => {
                     Debug.Log("Transitioning to level 1");
                     // release focus from this button (otherwise the uidocument becomes buggy)
@@ -81,6 +88,13 @@ public class GameManager : MonoBehaviour
                     LoadMenu(MenuState.Game);
                 };
             }
+
+            doc.rootVisualElement.Q<Button>("back-button").clicked += () => LoadMenu(MenuState.Menu);
+            break;
+
+            case MenuState.Multiplayer:
+            TextField bruh = doc.rootVisualElement.Q<TextField>("test-field");
+            // bruh.RegisterCallback<ClickEvent>(evt => bruh.Focus());
 
             doc.rootVisualElement.Q<Button>("back-button").clicked += () => LoadMenu(MenuState.Menu);
             break;

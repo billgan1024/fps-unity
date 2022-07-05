@@ -135,7 +135,7 @@ MonoBehaviour:
   firingDelay: 0.1
   maxHeight: 0
   cameraWallRotation: 12
-  displayBulletSpawnThreshold: 2
+  displayBulletSpawnThreshold: 1
   rifleFireSound: {fileID: 8300000, guid: b68f922c96f7c45308690cc40e484203, type: 3}
   jumpSound: {fileID: 8300000, guid: b25781f09568b4ab38aa56b783993f2f, type: 3}
   tapToFire: 0

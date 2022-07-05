@@ -9,6 +9,7 @@ public class Bullet : MonoBehaviour
     public Vector3 velocity;
     public GameObject displayBullet;
     public float projectileSize;
+    public GameObject bulletImpactPrefab;
 
     private LayerMask collideableMask;
 
@@ -32,8 +33,9 @@ public class Bullet : MonoBehaviour
             transform.position = hitData.OrderBy(hit => hit.distance).First().point;
             Destroy(gameObject);
 
-            // if we're too close to a wall, the display bullet isn't created
             if(displayBullet != null) Destroy(displayBullet);
+
+            // Instantiate(bulletImpactPrefab, transform.position, Quaternion.Euler(-transform.rotation.eulerAngles));
         }
         transform.position += velocity*Time.fixedDeltaTime;
     }

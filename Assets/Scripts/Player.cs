@@ -100,7 +100,7 @@ public class Player : MonoBehaviour
         cam.StartFollow(this);
 
         // grab a reference to the bullet origin object so we can spawn bullets there
-        bulletOrigin = cam.transform.Find("Bullet Origin");
+        bulletOrigin = cam.transform.Find("Rifle").Find("Bullet Origin");
 
         TransitionAir();
     }   
@@ -133,6 +133,7 @@ public class Player : MonoBehaviour
 
             // find the closest object (point) the player is looking at and aim the display bullet there, otherwise use the forward vector
             // find the speed to make the display bullet and the normal bullet reach the look point at the same time
+            // we set the rotation of the displaybullet for non-spherical bullets
             if(hitData.Length > 0) {
 
                 RaycastHit firstHit = hitData.OrderBy(hit => hit.distance).First();
@@ -146,18 +147,18 @@ public class Player : MonoBehaviour
 
                     displayBullet.GetComponent<Rigidbody>().velocity = (lookPoint-bulletOrigin.position).normalized*bulletSpeed*
                         ((lookPoint-bulletOrigin.position).magnitude)/firstHit.distance;
+                    realBullet.transform.rotation = displayBullet.transform.rotation = cam.transform.rotation;
                     realBullet.GetComponent<Bullet>().displayBullet = displayBullet;
                 }
                     
             } else {
                 GameObject displayBullet = Instantiate(displayBulletPrefab, bulletOrigin.position, Quaternion.identity);
                 displayBullet.GetComponent<Rigidbody>().velocity = cam.transform.forward*bulletSpeed;
+                
+                realBullet.transform.rotation = displayBullet.transform.rotation = cam.transform.rotation;
 
                 realBullet.GetComponent<Bullet>().displayBullet = displayBullet;
             }
-
-
-            Debug.Log(realBullet.transform.position == cam.transform.position);
 
             firingTimer = firingDelay;
         }

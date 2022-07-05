@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 999ca867bef4d431287347e30825696d
+guid: 99587ba650d444320989af5dce3897f9
 ModelImporter:
   serializedVersion: 21300
   internalIDToNameTable: []
@@ -8,17 +8,17 @@ ModelImporter:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: Main
-    second: {fileID: 2781410738928257789, guid: d2d792e2bfbe340769aeb6235e47242f, type: 3}
+    second: {fileID: 2100000, guid: 33262d20bdbb744e6b58c70f905ace60, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: MainDark
-    second: {fileID: 3023456236403852906, guid: d2d792e2bfbe340769aeb6235e47242f, type: 3}
+    second: {fileID: 2100000, guid: b2dfc453d9e404f0499b2bead212b1e9, type: 2}
   - first:
       type: UnityEngine:Material
       assembly: UnityEngine.CoreModule
       name: MainLight
-    second: {fileID: 1065303766495216645, guid: d2d792e2bfbe340769aeb6235e47242f, type: 3}
+    second: {fileID: 2100000, guid: ccad1d0155f384e5eacf4d22a84d6535, type: 2}
   materials:
     materialImportMode: 2
     materialName: 0

@@ -1,4 +1,30 @@
 * {
     -unity-font-definition: url('project://database/Assets/UI%20Toolkit/SourceSansPro-Regular%20SDF.asset?fileID=11400000&guid=21fe2774d07ff41619b1697ac2a64a85&type=2#SourceSansPro-Regular SDF');
-    font-size: 32px;
+    font-size: 24px;
+    -unity-font: url('project://database/Assets/UI%20Toolkit/SourceSansPro-Regular.ttf?fileID=12800000&guid=06d1bb8af2c9343529b6f956c6e9c2a3&type=3#SourceSansPro-Regular');
+}
+
+.unity-button {
+    width: 300px;
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
+
+.unity-text-field__input {
+    border-top-left-radius: 5px;
+    border-bottom-left-radius: 5px;
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    width: 300px;
+}
+
+.unity-text-field__label {
+    color: rgba(255, 255, 255, 255);
+    width: auto;
 }

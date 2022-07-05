@@ -1,4 +1,12 @@
 <ui:UXML xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" xsi="http://www.w3.org/2001/XMLSchema-instance" engine="UnityEngine.UIElements" editor="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
     <Style src="project://database/Assets/UI%20Toolkit/Styles.uss?fileID=7433441132597879392&amp;guid=f1948e21fe2de4c5482c35d37698778c&amp;type=3#Styles" />
-    <ui:Button text="Button" display-tooltip-when-elided="true" name="singleplayer-button" />
+    <ui:VisualElement style="position: absolute; align-items: center; width: 100%; height: 100%; justify-content: flex-start;">
+        <ui:Label text="FPS Game" display-tooltip-when-elided="true" name="Label" style="-unity-text-align: upper-center; position: relative; color: rgb(255, 255, 255); font-size: 48px;" />
+    </ui:VisualElement>
+    <ui:VisualElement style="width: 100%; height: 100%; justify-content: center; align-items: center; position: absolute;">
+        <ui:Button text="Singleplayer" display-tooltip-when-elided="true" name="menu-singleplayer-button" focusable="false" style="align-items: center; position: relative;" />
+        <ui:Button text="Multiplayer" display-tooltip-when-elided="true" name="menu-multiplayer-button" focusable="false" style="align-items: center; position: relative;" />
+        <ui:Button text="Options" display-tooltip-when-elided="true" name="menu-options-button" focusable="false" style="align-items: center; position: relative;" />
+        <ui:Button text="Quit" display-tooltip-when-elided="true" name="menu-quit-button" focusable="false" style="align-items: center; position: relative;" />
+    </ui:VisualElement>
 </ui:UXML>
