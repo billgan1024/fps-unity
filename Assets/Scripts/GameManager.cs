@@ -60,31 +60,33 @@ public class GameManager : MonoBehaviour
         // load the corresponding menu layout
         // rootvisualelement finds the first button with name equal to th string using dfs
         doc.visualTreeAsset = menuLayouts[(int) menu];
+
         menuState = menu;
+
+        // log all buttons? 
+        doc.rootVisualElement.Query<Button>().ForEach(btn => {
+            btn.focusable = false;
+        });
+
+        // doc.rootVisualElement.Query<VisualElement>().ForEach(v => {
+        //     v.pickingMode = PickingMode.Ignore;
+        // });
 
         switch(menu) {
             case MenuState.Menu:
-            Button singleplayer = doc.rootVisualElement.Q<Button>("menu-singleplayer-button");
-            Button multiplayer = doc.rootVisualElement.Q<Button>("menu-multiplayer-button");
-            doc.rootVisualElement.Q<Button>("menu-singleplayer-button").clicked += () => {
-                // singleplayer.Blur();
-                LoadMenu(MenuState.Singleplayer);
-                };
-            doc.rootVisualElement.Q<Button>("menu-multiplayer-button").clicked += () => {
-                // multiplayer.Blur();
-                LoadMenu(MenuState.Multiplayer);
-            };
-            
-            doc.rootVisualElement.Q<Button>("menu-quit-button").clicked += () => Application.Quit();
+            doc.rootVisualElement.Q<Button>("singleplayer-button").clicked += () => LoadMenu(MenuState.Singleplayer);
+            doc.rootVisualElement.Q<Button>("multiplayer-button").clicked += () => LoadMenu(MenuState.Multiplayer);
+            doc.rootVisualElement.Q<Button>("options-button").clicked += () => LoadMenu(MenuState.Options);
+            doc.rootVisualElement.Q<Button>("quit-button").clicked += () => Application.Quit();
             break;
             case MenuState.Singleplayer:
             for(int i = 1; i <= NUM_LEVELS; i++) {
-                Button btn = doc.rootVisualElement.Q<Button>("singleplayer-level" + i + "-button");
+                Button btn = doc.rootVisualElement.Q<Button>("level" + i + "-button");
                 btn.clicked += () => {
                     Debug.Log("Transitioning to level 1");
                     // release focus from this button (otherwise the uidocument becomes buggy)
                     btn.Blur();
-                    SceneManager.LoadScene("Level1");
+                    SceneManager.LoadScene("Level" + i);
                     LoadMenu(MenuState.Game);
                 };
             }
@@ -93,9 +95,17 @@ public class GameManager : MonoBehaviour
             break;
 
             case MenuState.Multiplayer:
-            TextField bruh = doc.rootVisualElement.Q<TextField>("test-field");
+            TextField ip = doc.rootVisualElement.Q<TextField>("ip-textfield");
+            TextField port = doc.rootVisualElement.Q<TextField>("port-textfield");
+            doc.rootVisualElement.Q<Button>("connect-button").clicked += () => {
+                Debug.Log(string.Format("Connecting to {0}:{1}", ip.value, port.value));
+            };
             // bruh.RegisterCallback<ClickEvent>(evt => bruh.Focus());
 
+            doc.rootVisualElement.Q<Button>("back-button").clicked += () => LoadMenu(MenuState.Menu);
+            break;
+
+            case MenuState.Options:
             doc.rootVisualElement.Q<Button>("back-button").clicked += () => LoadMenu(MenuState.Menu);
             break;
         }
