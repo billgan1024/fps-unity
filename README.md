@@ -9,7 +9,7 @@ An FPS game I'm prototyping in Unity.
 
 * Implementation of projectile weapons automatically aims bullets at the center of the screen despite the bullet origin not being there.
 
-### Screenshots
+### Samples
 
 
 ### June 30, 2022
