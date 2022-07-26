@@ -1,5 +1,5 @@
 ## FPS Game
-A multiplayer FPS game I'm working on. The platformer component of this project describes a template for a 3D platformer with theoretically perfect collision detection as we avoid using raycasts in favour of `OnCollision` events.
+An FPS game I'm prototyping in Unity. The platformer component of this project describes a template for a 3D platformer with theoretically perfect collision detection as we avoid using raycasts in favour of `OnCollision` events.
 
 ### June 30, 2022
 
