@@ -1,5 +1,16 @@
 ## FPS Game
-An FPS game I'm prototyping in Unity. The platformer component of this project describes a template for a 3D platformer with theoretically perfect collision detection as we avoid using raycasts in favour of `OnCollision` events.
+An FPS game I'm prototyping in Unity. 
+
+### Features
+
+* There is an implementation for wallriding and wallrunning which uses a general state system tracking the player's velocity, acceleration, and drag.
+
+* The platformer component of this project describes a template for a 3D platformer with theoretically perfect collision detection as we avoid using raycasts in favour of `OnCollision` events.
+
+* Implementation of projectile weapons automatically aims bullets at the center of the screen despite the bullet origin not being there.
+
+### Screenshots
+
 
 ### June 30, 2022
 
